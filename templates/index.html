@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}WatchTower KE — Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>WatchTower KE</h1>
+    <p class="subtitle">Real-time crime monitoring for Kenya — focused on gender-based violence, assault, fraud, and safety.</p>
+    <div class="hero-actions">
+        <a href="/dashboard" class="btn btn-primary">View Dashboard</a>
+        <a href="/reports" class="btn btn-secondary">Browse Reports</a>
+    </div>
+</section>
+
+<section class="features">
+    <div class="feature-card">
+        <h3>GBV Tracking</h3>
+        <p>Monitor gender-based violence reports from major Kenyan news outlets in real-time.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Fraud & Scam Alerts</h3>
+        <p>Stay informed about fraud schemes, MPesa scams, and sextortion cases across Kenya.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Safety Intelligence</h3>
+        <p>Location-tagged crime data to help you understand safety risks in Nairobi and beyond.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Auto-Updated</h3>
+        <p>Scrapers run every 6 hours pulling from Nation, Standard, Citizen Digital & The Star.</p>
+    </div>
+</section>
+
+<section class="stats-preview" id="stats-preview">
+    <h2>Quick Stats</h2>
+    <div class="stat-cards" id="stat-cards">
+        <div class="stat-card"><span class="stat-number" id="total-count">--</span><span class="stat-label">Total Reports</span></div>
+        <div class="stat-card accent-gbv"><span class="stat-number" id="gbv-count">--</span><span class="stat-label">GBV Cases</span></div>
+        <div class="stat-card accent-assault"><span class="stat-number" id="assault-count">--</span><span class="stat-label">Assault</span></div>
+        <div class="stat-card accent-fraud"><span class="stat-number" id="fraud-count">--</span><span class="stat-label">Fraud / Scams</span></div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/api/stats')
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('total-count').textContent = data.total_articles;
+        document.getElementById('gbv-count').textContent =
+            (data.categories.gbv || 0) + (data.categories.sexual_assault || 0) + (data.categories.domestic_violence || 0);
+        document.getElementById('assault-count').textContent = data.categories.assault || 0;
+        document.getElementById('fraud-count').textContent =
+            (data.categories.fraud || 0) + (data.categories.scam || 0);
+    })
+    .catch(() => {});
+</script>
+{% endblock %}

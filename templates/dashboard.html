@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — WatchTower KE{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+<p class="last-scrape">Last scrape: <span id="last-scrape">loading...</span></p>
+
+<div class="dashboard-grid">
+    <div class="chart-card">
+        <h3>Reports by Category</h3>
+        <canvas id="categoryChart"></canvas>
+    </div>
+    <div class="chart-card">
+        <h3>Reports by Source</h3>
+        <canvas id="sourceChart"></canvas>
+    </div>
+    <div class="chart-card full-width">
+        <h3>Top Locations</h3>
+        <canvas id="locationChart"></canvas>
+    </div>
+</div>
+
+<div class="scrape-controls">
+    <button class="btn btn-primary" id="scrape-btn" onclick="triggerScrape()">Run Scraper Now</button>
+    <span id="scrape-status"></span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CATEGORY_LABELS = {
+    gbv: 'GBV', sexual_assault: 'Sexual Assault', domestic_violence: 'Domestic Violence',
+    stalking: 'Stalking', harassment: 'Harassment', assault: 'Assault',
+    fraud: 'Fraud', scam: 'Scam', robbery: 'Robbery', kidnapping: 'Kidnapping'
+};
+const CATEGORY_COLORS = [
+    '#E8578A','#C74472','#A855C7','#7B2D8E','#5E1B6E',
+    '#6366F1','#1A9E8F','#2CC4B3','#2D1B3D','#7A6B8A'
+];
+
+fetch('/api/stats')
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('last-scrape').textContent =
+            data.last_scrape ? new Date(data.last_scrape).toLocaleString() : 'Never';
+
+        // Category pie chart
+        const catLabels = Object.keys(data.categories).map(k => CATEGORY_LABELS[k] || k);
+        const catValues = Object.values(data.categories);
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: CATEGORY_COLORS }] },
+            options: { responsive: true, plugins: { legend: { position: 'right' } } }
+        });
+
+        // Source bar chart
+        new Chart(document.getElementById('sourceChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.sources),
+                datasets: [{ label: 'Articles', data: Object.values(data.sources), backgroundColor: '#7B2D8E' }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        // Location bar chart
+        new Chart(document.getElementById('locationChart'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(data.top_locations),
+                datasets: [{ label: 'Reports', data: Object.values(data.top_locations), backgroundColor: '#1A9E8F' }]
+            },
+            options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+    })
+    .catch(() => {});
+
+function triggerScrape() {
+    const btn = document.getElementById('scrape-btn');
+    const status = document.getElementById('scrape-status');
+    btn.disabled = true;
+    status.textContent = 'Scraping...';
+    fetch('/api/scrape', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            status.textContent = `Done! ${data.new_articles} new articles found.`;
+            btn.disabled = false;
+            setTimeout(() => location.reload(), 2000);
+        })
+        .catch(e => {
+            status.textContent = 'Error: ' + e.message;
+            btn.disabled = false;
+        });
+}
+</script>
+{% endblock %}
