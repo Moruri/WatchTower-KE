@@ -42,6 +42,7 @@ body {
 .nav-brand { display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; font-weight: 700; }
 .nav-brand a { color: var(--white); text-decoration: none; }
 .logo { font-size: 1.5rem; }
+.nav-tagline { color: #C9B8D9; font-size: 0.85rem; font-weight: 400; }
 .nav-links { display: flex; gap: 1.5rem; }
 .nav-links a { color: #C9B8D9; text-decoration: none; font-weight: 500; transition: color .2s; }
 .nav-links a:hover, .nav-links a.active { color: var(--primary); }
@@ -151,6 +152,11 @@ body {
 }
 .filters input { flex: 1; min-width: 200px; }
 
+/* ── Reports header ──────────────────────────────────────────── */
+.reports-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+.reports-header h1 { font-size: 1.8rem; }
+.report-count { font-size: 0.9rem; color: var(--text-light); }
+
 /* ── Articles list ───────────────────────────────────────────── */
 .articles-list { display: flex; flex-direction: column; gap: 1rem; }
 .article-card {
@@ -183,6 +189,8 @@ body {
 .article-card h3 a:hover { color: var(--primary); }
 .article-card p { color: var(--text-light); font-size: 0.95rem; margin-bottom: 0.5rem; }
 .article-card time { font-size: 0.8rem; color: #B8A5C8; }
+.date { font-size: 0.8rem; color: var(--text-light); margin-left: auto; }
+.article-footer { font-size: 0.8rem; color: #B8A5C8; margin-top: 0.3rem; }
 .loading, .empty { text-align: center; padding: 3rem; color: var(--text-light); }
 
 /* ── Footer ──────────────────────────────────────────────────── */

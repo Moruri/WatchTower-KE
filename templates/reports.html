@@ -1,82 +1,114 @@
-{% extends "base.html" %}
-{% block title %}Reports — WatchTower KE{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WatchTower KE — Crime Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="logo">&#9888;</span>
+            <a href="/">WatchTower KE</a>
+        </div>
+        <div class="nav-tagline">Real-time crime reports across Kenya</div>
+    </nav>
 
-{% block content %}
-<h1>Crime Reports</h1>
+    <main class="container">
+        <div class="reports-header">
+            <h1>Crime Reports</h1>
+            <p class="report-count" id="report-count"></p>
+        </div>
 
-<div class="filters">
-    <select id="filter-category" onchange="loadArticles()">
-        <option value="">All Categories</option>
-        <option value="gbv">GBV</option>
-        <option value="sexual_assault">Sexual Assault</option>
-        <option value="domestic_violence">Domestic Violence</option>
-        <option value="stalking">Stalking</option>
-        <option value="harassment">Harassment</option>
-        <option value="assault">Assault</option>
-        <option value="fraud">Fraud</option>
-        <option value="scam">Scam</option>
-        <option value="robbery">Robbery</option>
-        <option value="kidnapping">Kidnapping</option>
-    </select>
-    <input type="text" id="filter-search" placeholder="Search articles..." onkeyup="debounceSearch()">
-    <select id="filter-source" onchange="loadArticles()">
-        <option value="">All Sources</option>
-        <option value="The Standard">The Standard</option>
-        <option value="Citizen Digital">Citizen Digital</option>
-        <option value="Google News KE">Google News KE</option>
-    </select>
-</div>
+        <div class="filters">
+            <select id="filter-category" onchange="loadArticles()">
+                <option value="">All Categories</option>
+                <option value="gbv">GBV</option>
+                <option value="sexual_assault">Sexual Assault</option>
+                <option value="domestic_violence">Domestic Violence</option>
+                <option value="stalking">Stalking</option>
+                <option value="harassment">Harassment</option>
+                <option value="assault">Assault</option>
+                <option value="fraud">Fraud</option>
+                <option value="scam">Scam</option>
+                <option value="robbery">Robbery</option>
+                <option value="kidnapping">Kidnapping</option>
+            </select>
+            <input type="text" id="filter-search" placeholder="Search reports..." onkeyup="debounceSearch()">
+            <select id="filter-source" onchange="loadArticles()">
+                <option value="">All Sources</option>
+                <option value="The Standard">The Standard</option>
+                <option value="Citizen Digital">Citizen Digital</option>
+                <option value="Google News KE">Google News KE</option>
+            </select>
+        </div>
 
-<div id="articles-list" class="articles-list">
-    <p class="loading">Loading reports...</p>
-</div>
-{% endblock %}
+        <div id="articles-list" class="articles-list">
+            <p class="loading">Loading reports...</p>
+        </div>
+    </main>
 
-{% block scripts %}
-<script>
-let searchTimeout;
-function debounceSearch() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(loadArticles, 400);
-}
+    <footer class="footer">
+        <p>WatchTower KE &mdash; Powered by <a href="https://shessafe.africa/" target="_blank">SheSafe Africa</a></p>
+    </footer>
 
-function loadArticles() {
-    const cat = document.getElementById('filter-category').value;
-    const q = document.getElementById('filter-search').value;
-    const source = document.getElementById('filter-source').value;
+    <script>
+    let searchTimeout;
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(loadArticles, 400);
+    }
 
-    const params = new URLSearchParams();
-    if (cat) params.set('category', cat);
-    if (q) params.set('q', q);
-    if (source) params.set('source', source);
-    params.set('limit', '200');
+    function formatDate(dateStr) {
+        if (!dateStr) return 'Date unknown';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
 
-    fetch('/api/articles?' + params)
-        .then(r => r.json())
-        .then(articles => {
-            const container = document.getElementById('articles-list');
-            if (!articles.length) {
-                container.innerHTML = '<p class="empty">No articles found. Try running the scraper from the Dashboard.</p>';
-                return;
-            }
-            container.innerHTML = articles.map(a => `
-                <article class="article-card">
-                    <div class="article-meta">
-                        <span class="badge badge-${a.category}">${a.category.replace('_', ' ')}</span>
-                        <span class="source">${a.source}</span>
-                        ${a.location ? `<span class="location">${a.location}</span>` : ''}
-                    </div>
-                    <h3><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></h3>
-                    <p>${a.summary || ''}</p>
-                    <time>${a.published_date ? new Date(a.published_date).toLocaleDateString() : 'Date unknown'}</time>
-                </article>
-            `).join('');
-        })
-        .catch(() => {
-            document.getElementById('articles-list').innerHTML = '<p class="empty">Failed to load articles.</p>';
-        });
-}
+    function loadArticles() {
+        const cat = document.getElementById('filter-category').value;
+        const q = document.getElementById('filter-search').value;
+        const source = document.getElementById('filter-source').value;
 
-loadArticles();
-</script>
-{% endblock %}
+        const params = new URLSearchParams();
+        if (cat) params.set('category', cat);
+        if (q) params.set('q', q);
+        if (source) params.set('source', source);
+        params.set('limit', '200');
+
+        fetch('/api/articles?' + params)
+            .then(r => r.json())
+            .then(articles => {
+                const container = document.getElementById('articles-list');
+                const countEl = document.getElementById('report-count');
+                countEl.textContent = articles.length + ' report' + (articles.length !== 1 ? 's' : '') + ' found';
+
+                if (!articles.length) {
+                    container.innerHTML = '<p class="empty">No reports found matching your filters.</p>';
+                    return;
+                }
+                container.innerHTML = articles.map(a => `
+                    <article class="article-card">
+                        <div class="article-meta">
+                            <span class="badge badge-${a.category}">${a.category.replace(/_/g, ' ')}</span>
+                            ${a.location ? `<span class="location">${a.location}</span>` : ''}
+                            <span class="date">${formatDate(a.published_date)}</span>
+                        </div>
+                        <h3><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></h3>
+                        ${a.summary ? `<p>${a.summary}</p>` : ''}
+                        <div class="article-footer">
+                            <span class="source">${a.source}</span>
+                        </div>
+                    </article>
+                `).join('');
+            })
+            .catch(() => {
+                document.getElementById('articles-list').innerHTML = '<p class="empty">Failed to load reports.</p>';
+            });
+    }
+
+    loadArticles();
+    </script>
+</body>
+</html>

@@ -4,7 +4,9 @@ import logging
 from datetime import datetime, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, redirect, url_for
+
+import threading
 
 from config import Config
 from models import db, Article, ScrapeLog
@@ -25,29 +27,43 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    # ── Background scheduler ─────────────────────────────────────────
+    # ── Background scheduler — runs every 1 hour ─────────────────────
     scheduler = BackgroundScheduler()
     scheduler.add_job(
         func=lambda: run_all_scrapers(app),
         trigger="interval",
         hours=Config.SCRAPE_INTERVAL_HOURS,
         id="scrape_job",
-        next_run_time=None,  # don't run on startup; use /api/scrape to trigger
     )
     scheduler.start()
+
+    # Run an initial scrape on startup (in background thread so app boots fast)
+    def _initial_scrape():
+        import time
+        time.sleep(3)  # let Flask finish starting
+        logger.info("Running initial scrape on startup...")
+        run_all_scrapers(app)
+
+    threading.Thread(target=_initial_scrape, daemon=True).start()
 
     # ── Page routes ──────────────────────────────────────────────────
     @app.route("/")
     def index():
+        return render_template("reports.html")
+
+    @app.route("/embed")
+    def embed():
+        """Standalone reports widget — no nav/footer, ready to iframe."""
+        return render_template("embed.html")
+
+    # ── Admin routes (not for public users) ──────────────────────────
+    @app.route("/admin")
+    def admin_home():
         return render_template("index.html")
 
-    @app.route("/dashboard")
-    def dashboard():
+    @app.route("/admin/dashboard")
+    def admin_dashboard():
         return render_template("dashboard.html")
-
-    @app.route("/reports")
-    def reports():
-        return render_template("reports.html")
 
     # ── API routes ───────────────────────────────────────────────────
     @app.route("/api/articles")
@@ -73,7 +89,12 @@ def create_app():
 
         limit = request.args.get("limit", 100, type=int)
         articles = (
-            query.order_by(Article.scraped_at.desc()).limit(limit).all()
+            query.order_by(
+                Article.published_date.desc().nullslast(),
+                Article.scraped_at.desc(),
+            )
+            .limit(limit)
+            .all()
         )
         return jsonify([a.to_dict() for a in articles])
 
@@ -127,6 +148,17 @@ def create_app():
         """Manually trigger a scrape run."""
         new_count = run_all_scrapers(app)
         return jsonify({"status": "ok", "new_articles": new_count})
+
+    # ── CORS — allow shessafe.africa to call the API ──────────────
+    @app.after_request
+    def add_cors(response):
+        origin = request.headers.get("Origin", "")
+        allowed = ["https://shessafe.africa", "http://localhost", "http://127.0.0.1"]
+        if any(origin.startswith(o) for o in allowed):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return response
 
     return app
 

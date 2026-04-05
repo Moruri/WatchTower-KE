@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WatchTower KE Reports</title>
+    <style>
+    :root {
+        --primary: #7B2D8E;
+        --primary-light: #A855C7;
+        --accent: #1A9E8F;
+        --warm: #E8578A;
+        --dark: #2D1B3D;
+        --text: #2D1B3D;
+        --text-light: #7A6B8A;
+        --border: #E6D8F0;
+        --white: #ffffff;
+        --body-bg: #F6F0FA;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); background: transparent; line-height: 1.6; }
+
+    .filters { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .filters select, .filters input {
+        padding: 0.5rem 0.8rem; border: 1px solid var(--border); border-radius: 6px;
+        font-size: 0.85rem; background: var(--white);
+    }
+    .filters input { flex: 1; min-width: 160px; }
+
+    .report-count { font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.8rem; }
+
+    .articles-list { display: flex; flex-direction: column; gap: 0.8rem; }
+    .article-card {
+        background: var(--white); border-radius: 8px; padding: 1rem 1.2rem;
+        border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(123,45,142,.05);
+    }
+    .article-meta { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; }
+    .badge {
+        display: inline-block; padding: 0.15rem 0.6rem; border-radius: 20px;
+        font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: #fff; background: var(--text-light);
+    }
+    .badge-gbv, .badge-sexual_assault, .badge-domestic_violence { background: var(--warm); }
+    .badge-stalking, .badge-harassment { background: var(--primary); }
+    .badge-assault { background: #6366F1; }
+    .badge-fraud, .badge-scam { background: var(--accent); }
+    .badge-robbery, .badge-kidnapping { background: var(--dark); }
+
+    .location { font-size: 0.8rem; color: var(--primary); font-weight: 500; }
+    .date { font-size: 0.8rem; color: var(--text-light); margin-left: auto; }
+    .article-card h3 { font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .article-card h3 a { color: var(--dark); text-decoration: none; }
+    .article-card h3 a:hover { color: var(--primary); }
+    .article-card p { color: var(--text-light); font-size: 0.85rem; margin-bottom: 0.3rem; }
+    .article-footer { font-size: 0.75rem; color: #B8A5C8; }
+    .empty { text-align: center; padding: 2rem; color: var(--text-light); }
+    </style>
+</head>
+<body>
+    <div class="filters">
+        <select id="filter-category" onchange="loadArticles()">
+            <option value="">All Categories</option>
+            <option value="gbv">GBV</option>
+            <option value="sexual_assault">Sexual Assault</option>
+            <option value="domestic_violence">Domestic Violence</option>
+            <option value="stalking">Stalking</option>
+            <option value="harassment">Harassment</option>
+            <option value="assault">Assault</option>
+            <option value="fraud">Fraud</option>
+            <option value="scam">Scam</option>
+            <option value="robbery">Robbery</option>
+            <option value="kidnapping">Kidnapping</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="Search reports..." onkeyup="debounceSearch()">
+    </div>
+    <p class="report-count" id="report-count"></p>
+    <div id="articles-list" class="articles-list">
+        <p class="empty">Loading reports...</p>
+    </div>
+
+    <script>
+    // ── Set this to your deployed WatchTower API URL ──
+    const API_BASE = window.WATCHTOWER_API || '';
+
+    let searchTimeout;
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(loadArticles, 400);
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        return new Date(dateStr).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function loadArticles() {
+        const cat = document.getElementById('filter-category').value;
+        const q = document.getElementById('filter-search').value;
+        const params = new URLSearchParams();
+        if (cat) params.set('category', cat);
+        if (q) params.set('q', q);
+        params.set('limit', '200');
+
+        fetch(API_BASE + '/api/articles?' + params)
+            .then(r => r.json())
+            .then(articles => {
+                document.getElementById('report-count').textContent =
+                    articles.length + ' report' + (articles.length !== 1 ? 's' : '');
+                const c = document.getElementById('articles-list');
+                if (!articles.length) { c.innerHTML = '<p class="empty">No reports found.</p>'; return; }
+                c.innerHTML = articles.map(a => `
+                    <article class="article-card">
+                        <div class="article-meta">
+                            <span class="badge badge-${a.category}">${a.category.replace(/_/g,' ')}</span>
+                            ${a.location ? `<span class="location">${a.location}</span>` : ''}
+                            <span class="date">${formatDate(a.published_date)}</span>
+                        </div>
+                        <h3><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></h3>
+                        ${a.summary ? `<p>${a.summary}</p>` : ''}
+                        <div class="article-footer">${a.source}</div>
+                    </article>
+                `).join('');
+            })
+            .catch(() => { document.getElementById('articles-list').innerHTML = '<p class="empty">Failed to load.</p>'; });
+    }
+    loadArticles();
+    </script>
+</body>
+</html>
