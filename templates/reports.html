@@ -9,16 +9,21 @@
 <body>
     <nav class="navbar">
         <div class="nav-brand">
-            <span class="logo">&#9888;</span>
+            <div class="logo">&#9888;</div>
             <a href="/">WatchTower KE</a>
         </div>
-        <div class="nav-tagline">Real-time crime reports across Kenya</div>
+        <div class="nav-tagline">Real-time crime intelligence across Kenya</div>
     </nav>
 
     <main class="container">
         <div class="reports-header">
             <h1>Crime Reports</h1>
-            <p class="report-count" id="report-count"></p>
+            <span class="report-count" id="report-count"></span>
+        </div>
+
+        <div class="live-bar">
+            <span class="live-dot"></span>
+            <span>Auto-updating every hour from Kenyan news sources</span>
         </div>
 
         <div class="filters">
@@ -44,8 +49,23 @@
             </select>
         </div>
 
+        <div class="category-pills" id="category-pills">
+            <button class="pill active" data-cat="" onclick="filterPill(this)">All</button>
+            <button class="pill" data-cat="gbv" onclick="filterPill(this)">GBV</button>
+            <button class="pill" data-cat="sexual_assault" onclick="filterPill(this)">Sexual Assault</button>
+            <button class="pill" data-cat="domestic_violence" onclick="filterPill(this)">Domestic Violence</button>
+            <button class="pill" data-cat="stalking" onclick="filterPill(this)">Stalking</button>
+            <button class="pill" data-cat="fraud" onclick="filterPill(this)">Fraud</button>
+            <button class="pill" data-cat="scam" onclick="filterPill(this)">Scam</button>
+            <button class="pill" data-cat="assault" onclick="filterPill(this)">Assault</button>
+            <button class="pill" data-cat="robbery" onclick="filterPill(this)">Robbery</button>
+        </div>
+
         <div id="articles-list" class="articles-list">
-            <p class="loading">Loading reports...</p>
+            <div class="loading">
+                <span class="empty-icon">&#128269;</span>
+                Loading reports...
+            </div>
         </div>
     </main>
 
@@ -61,15 +81,34 @@
     }
 
     function formatDate(dateStr) {
-        if (!dateStr) return 'Date unknown';
+        if (!dateStr) return '';
         const d = new Date(dateStr);
+        const now = new Date();
+        const diff = now - d;
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+        if (hours < 1) return 'Just now';
+        if (hours < 24) return hours + 'h ago';
+        if (days < 7) return days + 'd ago';
         return d.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function filterPill(el) {
+        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('filter-category').value = el.dataset.cat;
+        loadArticles();
     }
 
     function loadArticles() {
         const cat = document.getElementById('filter-category').value;
         const q = document.getElementById('filter-search').value;
         const source = document.getElementById('filter-source').value;
+
+        // Sync pills with dropdown
+        document.querySelectorAll('.pill').forEach(p => {
+            p.classList.toggle('active', p.dataset.cat === cat);
+        });
 
         const params = new URLSearchParams();
         if (cat) params.set('category', cat);
@@ -82,14 +121,18 @@
             .then(articles => {
                 const container = document.getElementById('articles-list');
                 const countEl = document.getElementById('report-count');
-                countEl.textContent = articles.length + ' report' + (articles.length !== 1 ? 's' : '') + ' found';
+                countEl.textContent = articles.length + ' report' + (articles.length !== 1 ? 's' : '');
 
                 if (!articles.length) {
-                    container.innerHTML = '<p class="empty">No reports found matching your filters.</p>';
+                    container.innerHTML = `
+                        <div class="empty">
+                            <span class="empty-icon">&#128210;</span>
+                            No reports found matching your filters.
+                        </div>`;
                     return;
                 }
                 container.innerHTML = articles.map(a => `
-                    <article class="article-card">
+                    <article class="article-card" data-cat="${a.category}">
                         <div class="article-meta">
                             <span class="badge badge-${a.category}">${a.category.replace(/_/g, ' ')}</span>
                             ${a.location ? `<span class="location">${a.location}</span>` : ''}
@@ -97,14 +140,16 @@
                         </div>
                         <h3><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></h3>
                         ${a.summary ? `<p>${a.summary}</p>` : ''}
-                        <div class="article-footer">
-                            <span class="source">${a.source}</span>
-                        </div>
+                        <div class="article-footer">${a.source}</div>
                     </article>
                 `).join('');
             })
             .catch(() => {
-                document.getElementById('articles-list').innerHTML = '<p class="empty">Failed to load reports.</p>';
+                document.getElementById('articles-list').innerHTML = `
+                    <div class="empty">
+                        <span class="empty-icon">&#9888;</span>
+                        Failed to load reports. Please try again.
+                    </div>`;
             });
     }
 

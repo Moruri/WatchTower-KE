@@ -4,55 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WatchTower KE Reports</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
     :root {
         --primary: #7B2D8E;
+        --primary-50: #F5EAFB;
         --primary-light: #A855C7;
         --accent: #1A9E8F;
         --warm: #E8578A;
+        --warm-dark: #C74472;
+        --warm-light: #F9D0DF;
         --dark: #2D1B3D;
         --text: #2D1B3D;
-        --text-light: #7A6B8A;
-        --border: #E6D8F0;
-        --white: #ffffff;
-        --body-bg: #F6F0FA;
+        --text-secondary: #6B5A7A;
+        --text-muted: #9B8AAE;
+        --border: #E8DDF2;
+        --border-light: #F0E8F7;
+        --white: #fff;
+        --radius: 12px;
+        --radius-sm: 8px;
+        --radius-full: 9999px;
+        --shadow-sm: 0 1px 3px rgba(45,27,61,.06);
+        --shadow-md: 0 4px 12px rgba(45,27,61,.08);
+        --transition: 0.2s cubic-bezier(.4,0,.2,1);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); background: transparent; line-height: 1.6; }
+    body { font-family: 'Inter', -apple-system, sans-serif; color: var(--text); background: transparent; line-height: 1.6; -webkit-font-smoothing: antialiased; padding: 0.5rem; }
 
-    .filters { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .filters { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
     .filters select, .filters input {
-        padding: 0.5rem 0.8rem; border: 1px solid var(--border); border-radius: 6px;
-        font-size: 0.85rem; background: var(--white);
+        padding: 0.5rem 0.8rem; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+        font-size: 0.8rem; font-family: inherit; background: var(--white); color: var(--text); outline: none;
+        transition: border-color var(--transition);
     }
-    .filters input { flex: 1; min-width: 160px; }
+    .filters select:focus, .filters input:focus { border-color: var(--primary-light); }
+    .filters input { flex: 1; min-width: 140px; }
 
-    .report-count { font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.8rem; }
+    .pills { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .pill {
+        padding: 0.25rem 0.65rem; border-radius: var(--radius-full); font-size: 0.7rem;
+        font-weight: 600; border: 1.5px solid var(--border); background: var(--white);
+        color: var(--text-secondary); cursor: pointer; transition: all var(--transition); text-transform: capitalize;
+    }
+    .pill:hover { border-color: var(--primary-light); color: var(--primary); }
+    .pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    .articles-list { display: flex; flex-direction: column; gap: 0.8rem; }
+    .report-count { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem; display: block; }
+    .articles-list { display: flex; flex-direction: column; gap: 0.6rem; }
     .article-card {
-        background: var(--white); border-radius: 8px; padding: 1rem 1.2rem;
-        border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(123,45,142,.05);
+        background: var(--white); border-radius: var(--radius); padding: 1rem 1.2rem;
+        border: 1.5px solid var(--border-light); box-shadow: var(--shadow-sm);
+        transition: all var(--transition); position: relative;
     }
-    .article-meta { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; }
-    .badge {
-        display: inline-block; padding: 0.15rem 0.6rem; border-radius: 20px;
-        font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: #fff; background: var(--text-light);
+    .article-card:hover { border-color: var(--border); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .article-card::before {
+        content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+        width: 3px; border-radius: 3px 0 0 3px; background: var(--border); transition: background var(--transition);
     }
-    .badge-gbv, .badge-sexual_assault, .badge-domestic_violence { background: var(--warm); }
-    .badge-stalking, .badge-harassment { background: var(--primary); }
-    .badge-assault { background: #6366F1; }
-    .badge-fraud, .badge-scam { background: var(--accent); }
-    .badge-robbery, .badge-kidnapping { background: var(--dark); }
+    .article-card:hover::before { background: var(--primary-light); }
+    .article-card[data-cat="gbv"]::before, .article-card[data-cat="sexual_assault"]::before, .article-card[data-cat="domestic_violence"]::before { background: var(--warm); }
+    .article-card[data-cat="stalking"]::before, .article-card[data-cat="harassment"]::before { background: var(--primary); }
+    .article-card[data-cat="assault"]::before { background: #6366F1; }
+    .article-card[data-cat="fraud"]::before, .article-card[data-cat="scam"]::before { background: var(--accent); }
+    .article-card[data-cat="robbery"]::before, .article-card[data-cat="kidnapping"]::before { background: var(--dark); }
 
-    .location { font-size: 0.8rem; color: var(--primary); font-weight: 500; }
-    .date { font-size: 0.8rem; color: var(--text-light); margin-left: auto; }
-    .article-card h3 { font-size: 0.95rem; margin-bottom: 0.2rem; }
-    .article-card h3 a { color: var(--dark); text-decoration: none; }
+    .article-meta { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; flex-wrap: wrap; }
+    .badge {
+        display: inline-flex; padding: 0.15rem 0.55rem; border-radius: var(--radius-full);
+        font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .badge-gbv, .badge-sexual_assault, .badge-domestic_violence { background: var(--warm-light); color: var(--warm-dark); }
+    .badge-stalking, .badge-harassment { background: var(--primary-50); color: var(--primary); }
+    .badge-assault { background: #EEF2FF; color: #4F46E5; }
+    .badge-fraud, .badge-scam { background: #D1FAE5; color: #065F46; }
+    .badge-robbery, .badge-kidnapping { background: #F3F4F6; color: #374151; }
+
+    .location { font-size: 0.7rem; color: var(--primary); font-weight: 500; }
+    .location::before { content: '\25CF'; font-size: 0.35rem; opacity: .5; margin-right: 0.2rem; }
+    .date { font-size: 0.7rem; color: var(--text-muted); margin-left: auto; }
+    .article-card h3 { font-size: 0.9rem; font-weight: 600; line-height: 1.4; margin-bottom: 0.2rem; }
+    .article-card h3 a { color: var(--dark); text-decoration: none; transition: color var(--transition); }
     .article-card h3 a:hover { color: var(--primary); }
-    .article-card p { color: var(--text-light); font-size: 0.85rem; margin-bottom: 0.3rem; }
-    .article-footer { font-size: 0.75rem; color: #B8A5C8; }
-    .empty { text-align: center; padding: 2rem; color: var(--text-light); }
+    .article-card p { color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 0.2rem; }
+    .article-footer { font-size: 0.7rem; color: var(--text-muted); }
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 0.9rem; }
+    .empty-icon { font-size: 2rem; display: block; margin-bottom: 0.5rem; opacity: .4; }
     </style>
 </head>
 <body>
@@ -72,55 +108,60 @@
         </select>
         <input type="text" id="filter-search" placeholder="Search reports..." onkeyup="debounceSearch()">
     </div>
-    <p class="report-count" id="report-count"></p>
+    <div class="pills" id="pills">
+        <button class="pill active" data-cat="" onclick="filterPill(this)">All</button>
+        <button class="pill" data-cat="gbv" onclick="filterPill(this)">GBV</button>
+        <button class="pill" data-cat="sexual_assault" onclick="filterPill(this)">Sexual Assault</button>
+        <button class="pill" data-cat="fraud" onclick="filterPill(this)">Fraud</button>
+        <button class="pill" data-cat="scam" onclick="filterPill(this)">Scam</button>
+        <button class="pill" data-cat="assault" onclick="filterPill(this)">Assault</button>
+        <button class="pill" data-cat="stalking" onclick="filterPill(this)">Stalking</button>
+    </div>
+    <span class="report-count" id="report-count"></span>
     <div id="articles-list" class="articles-list">
-        <p class="empty">Loading reports...</p>
+        <div class="empty"><span class="empty-icon">&#128269;</span>Loading reports...</div>
     </div>
 
     <script>
-    // ── Set this to your deployed WatchTower API URL ──
     const API_BASE = window.WATCHTOWER_API || '';
-
     let searchTimeout;
-    function debounceSearch() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(loadArticles, 400);
-    }
-
+    function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadArticles, 400); }
     function formatDate(dateStr) {
         if (!dateStr) return '';
-        return new Date(dateStr).toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
+        const d = new Date(dateStr), diff = Date.now() - d, h = Math.floor(diff/36e5), dy = Math.floor(diff/864e5);
+        if (h < 1) return 'Just now'; if (h < 24) return h + 'h ago'; if (dy < 7) return dy + 'd ago';
+        return d.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' });
     }
-
+    function filterPill(el) {
+        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('filter-category').value = el.dataset.cat;
+        loadArticles();
+    }
     function loadArticles() {
         const cat = document.getElementById('filter-category').value;
         const q = document.getElementById('filter-search').value;
+        document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.cat === cat));
         const params = new URLSearchParams();
         if (cat) params.set('category', cat);
         if (q) params.set('q', q);
         params.set('limit', '200');
-
-        fetch(API_BASE + '/api/articles?' + params)
-            .then(r => r.json())
-            .then(articles => {
-                document.getElementById('report-count').textContent =
-                    articles.length + ' report' + (articles.length !== 1 ? 's' : '');
-                const c = document.getElementById('articles-list');
-                if (!articles.length) { c.innerHTML = '<p class="empty">No reports found.</p>'; return; }
-                c.innerHTML = articles.map(a => `
-                    <article class="article-card">
-                        <div class="article-meta">
-                            <span class="badge badge-${a.category}">${a.category.replace(/_/g,' ')}</span>
-                            ${a.location ? `<span class="location">${a.location}</span>` : ''}
-                            <span class="date">${formatDate(a.published_date)}</span>
-                        </div>
-                        <h3><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></h3>
-                        ${a.summary ? `<p>${a.summary}</p>` : ''}
-                        <div class="article-footer">${a.source}</div>
-                    </article>
-                `).join('');
-            })
-            .catch(() => { document.getElementById('articles-list').innerHTML = '<p class="empty">Failed to load.</p>'; });
+        fetch(API_BASE + '/api/articles?' + params).then(r => r.json()).then(articles => {
+            document.getElementById('report-count').textContent = articles.length + ' report' + (articles.length !== 1 ? 's' : '');
+            const c = document.getElementById('articles-list');
+            if (!articles.length) { c.innerHTML = '<div class="empty"><span class="empty-icon">&#128210;</span>No reports found.</div>'; return; }
+            c.innerHTML = articles.map(a => `
+                <article class="article-card" data-cat="${a.category}">
+                    <div class="article-meta">
+                        <span class="badge badge-${a.category}">${a.category.replace(/_/g,' ')}</span>
+                        ${a.location ? `<span class="location">${a.location}</span>` : ''}
+                        <span class="date">${formatDate(a.published_date)}</span>
+                    </div>
+                    <h3><a href="${a.url}" target="_blank" rel="noopener">${a.title}</a></h3>
+                    ${a.summary ? `<p>${a.summary}</p>` : ''}
+                    <div class="article-footer">${a.source}</div>
+                </article>`).join('');
+        }).catch(() => { document.getElementById('articles-list').innerHTML = '<div class="empty"><span class="empty-icon">&#9888;</span>Failed to load.</div>'; });
     }
     loadArticles();
     </script>
